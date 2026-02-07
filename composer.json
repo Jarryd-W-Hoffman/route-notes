@@ -1,0 +1,15 @@
+{
+    "name": "jarryd/route-notes",
+    "autoload": {
+        "psr-4": {
+            "Jarryd\\RouteNotes\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Jarryd Hoffman",
+            "email": "jarryd.hoffman@windowslive.com"
+        }
+    ],
+    "require": {}
+}

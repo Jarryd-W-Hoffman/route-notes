@@ -31,6 +31,18 @@ class RouteListNotesTest extends TestCase
     }
 
     #[Test]
+    public function it_merges_fluent_and_array_notes_with_fluent_priority()
+    {
+        Route::get('/mixed', fn() => 'ok')
+            ->note('Fluent Note')
+            ->notes(['Array Note 1', 'Array Note 2']);
+
+        $this->artisan('route:list')
+            ->expectsOutputToContain('Fluent Note | Array Note 1 | Array Note 2')
+            ->assertExitCode(0);
+    }
+
+    #[Test]
     public function it_can_filter_routes_using_the_notes_flag()
     {
         Route::get('/noted', fn() => 'ok')->note('Important');

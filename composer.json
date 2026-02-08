@@ -1,15 +1,45 @@
 {
     "name": "jarryd/route-notes",
-    "autoload": {
-        "psr-4": {
-            "Jarryd\\RouteNotes\\": "src/"
-        }
-    },
+    "description": "Add human-readable notes to Laravel routes and displays them in the route:list command.",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "routes",
+        "artisan",
+        "dx",
+        "documentation"
+    ],
+    "license": "MIT",
     "authors": [
         {
             "name": "Jarryd Hoffman",
             "email": "jarryd.hoffman@windowslive.com"
         }
     ],
-    "require": {}
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^10.0|^11.0|^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jarryd\\RouteNotes\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jarryd\\RouteNotes\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Jarryd\\RouteNotes\\RouteNotesServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }

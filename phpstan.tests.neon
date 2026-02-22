@@ -1,0 +1,8 @@
+includes:
+    - phpstan.neon
+
+parameters:
+    level: 5
+
+    paths:
+        - tests

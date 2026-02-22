@@ -1,4 +1,5 @@
 <?php
+
 namespace Jarryd\RouteNotes\Commands;
 
 use Illuminate\Foundation\Console\RouteListCommand as BaseCommand;
@@ -7,14 +8,24 @@ use Symfony\Component\Console\Input\InputOption;
 
 class RouteListCommand extends BaseCommand
 {
-    protected function getOptions()
+    /**
+     * Get the console command options.
+     *
+     * @return array<int, array{0:string,1:string|null,2:int,3:string}>
+     */
+    protected function getOptions(): array
     {
         return array_merge(parent::getOptions(), [
             ['notes', null, InputOption::VALUE_NONE, 'Only show routes that have notes'],
         ]);
     }
 
-    protected function displayRoutes(array $routes)
+    /**
+     * Display the route list.
+     *
+     * @param  array<int, array<string,mixed>>  $routes
+     */
+    protected function displayRoutes(array $routes): void
     {
         $allRoutes = $this->router->getRoutes();
         $showOnlyWithNotes = $this->option('notes');
@@ -22,10 +33,11 @@ class RouteListCommand extends BaseCommand
         $processedRoutes = collect($routes)->map(function ($route) use ($allRoutes) {
             $method = explode('|', $route['method'])[0];
             $actualRoute = collect($allRoutes->get($method))
-                ->first(fn($r) => $r->uri() === $route['uri']);
+                ->first(fn ($r) => $r->uri() === $route['uri']);
 
-            if (!$actualRoute) {
+            if (! $actualRoute) {
                 $route['note'] = '';
+
                 return $route;
             }
 
@@ -42,17 +54,22 @@ class RouteListCommand extends BaseCommand
         });
 
         if ($showOnlyWithNotes) {
-            $processedRoutes = $processedRoutes->filter(fn($r) => !empty($r['note']));
+            $processedRoutes = $processedRoutes->filter(fn ($r) => ! empty($r['note']));
         }
 
         $this->table($this->getHeaders(), $processedRoutes->toArray());
     }
 
-    protected function getHeaders()
+    /**
+     * Get the headers for the route list table.
+     *
+     * @return array<int,string>
+     */
+    protected function getHeaders(): array
     {
         $headers = parent::getHeaders();
 
-        if (!in_array('Note', $headers)) {
+        if (! in_array('Note', $headers)) {
             $headers[] = 'Note';
         }
 

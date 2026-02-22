@@ -2,8 +2,8 @@
 
 namespace Jarryd\RouteNotes\Tests;
 
-use Orchestra\Testbench\TestCase as Orchestra;
 use Jarryd\RouteNotes\RouteNotesServiceProvider;
+use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {

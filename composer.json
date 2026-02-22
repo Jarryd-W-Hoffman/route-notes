@@ -16,6 +16,13 @@
             "email": "jarryd.hoffman@windowslive.com"
         }
     ],
+    "scripts": {
+        "lint": "./vendor/bin/pint --test",
+        "format": "./vendor/bin/pint",
+        "analyse": "./vendor/bin/phpstan analyse --memory-limit=1G",
+        "analyse:tests": "phpstan analyse -c phpstan.tests.neon --memory-limit=1G",
+        "test": "./vendor/bin/phpunit"
+    },
     "require": {
         "php": "^8.1|^8.2|^8.3",
         "illuminate/support": "^10.0|^11.0|^12.0"

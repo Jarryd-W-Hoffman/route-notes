@@ -2,8 +2,8 @@
 
 namespace Jarryd\RouteNotes;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\Route;
+use Illuminate\Support\ServiceProvider;
 use Jarryd\RouteNotes\Commands\RouteListCommand;
 
 class RouteNotesServiceProvider extends ServiceProvider

@@ -3,15 +3,16 @@
 namespace Jarryd\RouteNotes\Commands;
 
 use Illuminate\Foundation\Console\RouteListCommand as BaseCommand;
+use Illuminate\Routing\Route;
 use Jarryd\RouteNotes\Support\DocBlockParser;
 use Symfony\Component\Console\Input\InputOption;
 
 class RouteListCommand extends BaseCommand
 {
+    protected $headers = ['Domain', 'Method', 'URI', 'Name', 'Action', 'Middleware', 'Note'];
+
     /**
-     * Get the console command options.
-     *
-     * @return array<int, array{0:string,1:string|null,2:int,3:string}>
+     * @return array<int, array{0:string, 1:string|null, 2:int, 3:string}>
      */
     protected function getOptions(): array
     {
@@ -21,58 +22,37 @@ class RouteListCommand extends BaseCommand
     }
 
     /**
-     * Display the route list.
-     *
-     * @param  array<int, array<string,mixed>>  $routes
+     * @return array<string, mixed>|null
      */
-    protected function displayRoutes(array $routes): void
+    protected function getRouteInformation(Route $route)
     {
-        $allRoutes = $this->router->getRoutes();
-        $showOnlyWithNotes = $this->option('notes');
+        $information = parent::getRouteInformation($route);
 
-        $processedRoutes = collect($routes)->map(function ($route) use ($allRoutes) {
-            $method = explode('|', $route['method'])[0];
-            $actualRoute = collect($allRoutes->get($method))
-                ->first(fn ($r) => $r->uri() === $route['uri']);
-
-            if (! $actualRoute) {
-                $route['note'] = '';
-
-                return $route;
-            }
-
-            $fluentNotes = $actualRoute->defaults['_route_notes'] ?? [];
-
-            $action = $actualRoute->getAction('uses');
-            $docNotes = DocBlockParser::getNotes($action);
-
-            $allNotes = array_unique(array_merge($fluentNotes, $docNotes));
-
-            $route['note'] = implode(' | ', $allNotes);
-
-            return $route;
-        });
-
-        if ($showOnlyWithNotes) {
-            $processedRoutes = $processedRoutes->filter(fn ($r) => ! empty($r['note']));
+        // @phpstan-ignore identical.alwaysFalse
+        if ($information === null) {
+            return null;
         }
 
-        $this->table($this->getHeaders(), $processedRoutes->toArray());
+        $fluentNotes = $route->defaults['_route_notes'] ?? [];
+        $docNotes = DocBlockParser::getNotes($route->getAction('uses'));
+        $allNotes = array_unique(array_merge($fluentNotes, $docNotes));
+
+        $information['note'] = implode(' | ', $allNotes);
+
+        return $information;
     }
 
     /**
-     * Get the headers for the route list table.
-     *
-     * @return array<int,string>
+     * @param  array<string, mixed>[]  $routes
      */
-    protected function getHeaders(): array
+    protected function displayRoutes(array $routes): void
     {
-        $headers = parent::getHeaders();
+        $routes = collect($routes);
 
-        if (! in_array('Note', $headers)) {
-            $headers[] = 'Note';
+        if ($this->option('notes')) {
+            $routes = $routes->filter(fn ($r) => ! empty($r['note']));
         }
 
-        return $headers;
+        $this->table($this->getHeaders(), $routes->toArray());
     }
 }

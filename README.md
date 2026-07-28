@@ -17,14 +17,14 @@ Laravel documents what a route **`does`**; this package documents **`why`**. It 
 * ✅ **Fluent API** — Attach notes directly to route definitions.
 * ✅ **Controller DocBlocks** — Extract `@note` tags from controller methods automatically.
 * ✅ **Filtering** — Show only documented routes with the `--notes` flag.
-* ✅ **Legacy Friendly** — Supports everything from Laravel 10 through 12.
+* ✅ **Legacy Friendly** — Supports Laravel 12 and 13.
 * ✅ **Zero Config** — Install and run. No service providers to register or config to publish.
 * ✅ **Cache Safe** — Fully compatible with `route:cache`.
 
 ## 📦 Installation
 
 ```bash
-composer require jarryd/laravel-route-notes
+composer require jarryd/route-notes
 ```
 
 _Zero config. No service providers to register. No assets to publish._
@@ -112,7 +112,7 @@ php artisan route:list --notes
 | Controller Actions    | ✅     | Supports Controller@method                    |
 | Invokable Controllers | ✅     | Supports __invoke                             |
 | Route Caching         | ✅     | Fully compatible with route:cache             |
-| Laravel Versions      | ✅     | Supports 10.x, 11.x, and 12.x                  |
+| Laravel Versions      | ✅     | Supports 12.x and 13.x                          |
 | Closures              | ⚠️     | Fluent ->note() works; PHPDoc does not.        |
 | Class-level tags      | ❌     | Method-level @note only.                      |
 

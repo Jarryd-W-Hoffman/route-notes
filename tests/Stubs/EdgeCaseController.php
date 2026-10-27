@@ -10,13 +10,13 @@ class EdgeCaseController
     /**
      * Summary line mentioning @note in prose should be ignored.
      *
-     * @param  string  $id
+     * @param  string  $id  The record identifier
      *
      * @note After other tags
      *
      * @return void
      */
-    public function mixedTags() {}
+    public function mixedTags(string $id) {}
 
     /**
      * @noteworthy Not a note

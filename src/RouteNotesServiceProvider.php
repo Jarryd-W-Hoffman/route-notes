@@ -2,27 +2,24 @@
 
 namespace Jarryd\RouteNotes;
 
+use Illuminate\Foundation\Console\RouteListCommand as BaseCommand;
 use Illuminate\Routing\Route;
 use Illuminate\Support\ServiceProvider;
 use Jarryd\RouteNotes\Commands\RouteListCommand;
 
 class RouteNotesServiceProvider extends ServiceProvider
 {
-    public function register()
+    public function register(): void
     {
-        $this->app->extend('command.route.list', function ($command, $app) {
-            return new RouteListCommand($app->make($app['router']));
+        // Swap the framework's command for ours wherever it is resolved, rather
+        // than registering a second command under the same name.
+        $this->app->extend(BaseCommand::class, function ($command, $app) {
+            return new RouteListCommand($app['router']);
         });
     }
 
     public function boot(): void
     {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                RouteListCommand::class,
-            ]);
-        }
-
         // Notes live in the route action rather than the route defaults, as
         // defaults are merged into the route parameters at dispatch time.
         Route::macro('note', function (string $value) {

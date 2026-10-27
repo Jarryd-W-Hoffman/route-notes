@@ -5,11 +5,12 @@ namespace Jarryd\RouteNotes\Support;
 use Closure;
 use Jarryd\RouteNotes\Note;
 use Jarryd\RouteNotes\NoteLevel;
+use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
 
-class DocBlockParser
+class NoteReader
 {
     /**
      * Notes already read, keyed by class or "class::method".
@@ -19,7 +20,8 @@ class DocBlockParser
     protected static array $cache = [];
 
     /**
-     * Extract notes from a given action's class and method PHPDoc, class notes first.
+     * Read the notes for an action from its controller class and method, class
+     * notes first. Each reads PHPDoc @note tags, then #[Note] attributes.
      *
      * @return array<int, Note>
      */
@@ -67,8 +69,20 @@ class DocBlockParser
 
         // Class notes come from the routed controller, not a parent declaring the method.
         return array_merge(
-            static::$cache[$class] ??= static::parse((string) (new ReflectionClass($class))->getDocComment()),
+            static::$cache[$class] ??= static::fromReflection(new ReflectionClass($class)),
+            static::fromReflection($reflection),
+        );
+    }
+
+    /**
+     * @param  ReflectionClass<object>|ReflectionMethod  $reflection
+     * @return array<int, Note>
+     */
+    protected static function fromReflection(ReflectionClass|ReflectionMethod $reflection): array
+    {
+        return array_merge(
             static::parse((string) $reflection->getDocComment()),
+            array_map(fn (ReflectionAttribute $attribute) => $attribute->newInstance(), $reflection->getAttributes(Note::class)),
         );
     }
 

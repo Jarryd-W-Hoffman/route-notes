@@ -4,6 +4,7 @@ namespace Jarryd\RouteNotes\Tests\Feature;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use Jarryd\RouteNotes\Tests\Stubs\AttributeController;
 use Jarryd\RouteNotes\Tests\Stubs\InvokableController;
 use Jarryd\RouteNotes\Tests\Stubs\PhpDocController;
 use Jarryd\RouteNotes\Tests\TestCase;
@@ -96,6 +97,17 @@ class RouteListNotesTest extends TestCase
 
         $this->artisan('route:list')
             ->expectsOutputToContain('✎ Invokable note')
+            ->assertExitCode(0);
+    }
+
+    #[Test]
+    public function it_reads_note_attributes()
+    {
+        Route::post('/ledger', [AttributeController::class, 'store']);
+
+        $this->artisan('route:list')
+            ->expectsOutputToContain('✎ Writes to ledger')
+            ->expectsOutputToContain('✎ [deprecated] Remove after migration')
             ->assertExitCode(0);
     }
 

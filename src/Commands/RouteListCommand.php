@@ -8,7 +8,7 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Collection;
 use Jarryd\RouteNotes\Note;
 use Jarryd\RouteNotes\NoteLevel;
-use Jarryd\RouteNotes\Support\DocBlockParser;
+use Jarryd\RouteNotes\Support\NoteReader;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Input\InputOption;
 
@@ -64,7 +64,7 @@ class RouteListCommand extends BaseCommand
 
         $notes = array_merge(
             array_map(Note::fromArray(...), $fluentNotes),
-            DocBlockParser::getNotes($route->getAction('uses')),
+            NoteReader::getNotes($route->getAction('uses')),
         );
 
         $unique = [];

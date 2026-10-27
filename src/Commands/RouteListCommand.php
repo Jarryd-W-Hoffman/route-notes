@@ -6,6 +6,7 @@ use Illuminate\Foundation\Console\RouteListCommand as BaseCommand;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Jarryd\RouteNotes\Note;
 use Jarryd\RouteNotes\NoteLevel;
 use Jarryd\RouteNotes\Support\NoteReader;
@@ -26,6 +27,7 @@ class RouteListCommand extends BaseCommand
         // Added here rather than via getOptions(), which newer framework versions
         // ignore in favour of the parent command's $signature.
         $this->addOption('notes', null, InputOption::VALUE_NONE, 'Only show routes that have notes');
+        $this->addOption('note', null, InputOption::VALUE_REQUIRED, 'Only show routes with a note containing the given text, or of the given level');
     }
 
     /**
@@ -42,7 +44,11 @@ class RouteListCommand extends BaseCommand
 
         $notes = $this->getNotes($route);
 
-        if ($this->option('notes') && $notes === []) {
+        if ($this->onlyRoutesWithNotes() && $notes === []) {
+            return null;
+        }
+
+        if (is_string($search = $this->option('note')) && ! $this->hasMatchingNote($notes, $search)) {
             return null;
         }
 
@@ -50,6 +56,25 @@ class RouteListCommand extends BaseCommand
         $information['note'] = array_map(fn (Note $note) => $note->toArray(), $notes);
 
         return $information;
+    }
+
+    protected function onlyRoutesWithNotes(): bool
+    {
+        return (bool) $this->option('notes');
+    }
+
+    /**
+     * @param  array<int, Note>  $notes
+     */
+    protected function hasMatchingNote(array $notes, string $search): bool
+    {
+        foreach ($notes as $note) {
+            if ($note->level->value === strtolower($search) || Str::contains($note->text, $search, ignoreCase: true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

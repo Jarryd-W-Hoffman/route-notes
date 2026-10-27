@@ -22,14 +22,16 @@ class RouteNotesServiceProvider extends ServiceProvider
     {
         // Notes live in the route action rather than the route defaults, as
         // defaults are merged into the route parameters at dispatch time.
-        Route::macro('note', function (string $value) {
-            $this->action['notes'][] = $value;
+        Route::macro('note', function (string $value, NoteLevel|string $level = NoteLevel::Info) {
+            $this->action['notes'][] = (new Note($value, $level))->toArray();
 
             return $this;
         });
 
-        Route::macro('notes', function (array $values) {
-            $this->action['notes'] = array_merge($this->action['notes'] ?? [], array_values($values));
+        Route::macro('notes', function (array $values, NoteLevel|string $level = NoteLevel::Info) {
+            foreach ($values as $value) {
+                $this->action['notes'][] = (new Note($value, $level))->toArray();
+            }
 
             return $this;
         });

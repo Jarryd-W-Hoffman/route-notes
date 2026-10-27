@@ -47,7 +47,7 @@ class RouteListNotesTest extends TestCase
 
         $this->assertSame(
             [['Fluent Note', 'Array Note 1', 'Array Note 2']],
-            array_column($this->routeListJson(), 'note'),
+            $this->noteTexts($this->routeListJson()),
         );
     }
 
@@ -73,7 +73,7 @@ class RouteListNotesTest extends TestCase
 
         $this->assertSame(
             [['Fluent Note', 'Admin only', 'Read-only access']],
-            array_column($this->routeListJson(), 'note'),
+            $this->noteTexts($this->routeListJson()),
         );
     }
 
@@ -85,7 +85,7 @@ class RouteListNotesTest extends TestCase
 
         $this->assertSame(
             [['Admin only', 'Read-only access']],
-            array_column($this->routeListJson(), 'note'),
+            $this->noteTexts($this->routeListJson()),
         );
     }
 
@@ -152,7 +152,10 @@ class RouteListNotesTest extends TestCase
 
         $routes = collect($this->routeListJson())->keyBy('uri');
 
-        $this->assertSame(['One', 'Two'], $routes['noted']['note']);
+        $this->assertSame([
+            ['text' => 'One', 'level' => 'info'],
+            ['text' => 'Two', 'level' => 'info'],
+        ], $routes['noted']['note']);
         $this->assertSame([], $routes['silent']['note']);
     }
 
@@ -224,7 +227,7 @@ class RouteListNotesTest extends TestCase
         Route::get('/b', fn () => 'ok')->note('B');
 
         $this->assertSame(['b', 'a'], array_column($this->routeListJson(['--reverse' => true]), 'uri'));
-        $this->assertSame([['B'], ['A']], array_column($this->routeListJson(['--reverse' => true]), 'note'));
+        $this->assertSame([['B'], ['A']], $this->noteTexts($this->routeListJson(['--reverse' => true])));
     }
 
     #[Test]
@@ -245,8 +248,17 @@ class RouteListNotesTest extends TestCase
 
         $this->assertSame(
             [['Moved'], ['Static']],
-            array_column($this->routeListJson(), 'note'),
+            $this->noteTexts($this->routeListJson()),
         );
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $routes
+     * @return array<int, array<int, string>>
+     */
+    protected function noteTexts(array $routes): array
+    {
+        return array_map(fn (array $route) => array_column($route['note'], 'text'), $routes);
     }
 
     /**

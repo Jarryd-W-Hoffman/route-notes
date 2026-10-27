@@ -2,6 +2,7 @@
 
 namespace Jarryd\RouteNotes\Tests\Unit;
 
+use Jarryd\RouteNotes\Note;
 use Jarryd\RouteNotes\Support\DocBlockParser;
 use Jarryd\RouteNotes\Tests\Stubs\ChildNotesController;
 use Jarryd\RouteNotes\Tests\Stubs\ClassNotesController;
@@ -19,7 +20,7 @@ class DocBlockParserTest extends TestCase
     {
         $this->assertSame(
             ['Admin only', 'Read-only access'],
-            DocBlockParser::getNotes(PhpDocController::class.'@index'),
+            self::texts(DocBlockParser::getNotes(PhpDocController::class.'@index')),
         );
     }
 
@@ -28,14 +29,14 @@ class DocBlockParserTest extends TestCase
     {
         $this->assertSame(
             ['Admin only', 'Read-only access'],
-            DocBlockParser::getNotes([PhpDocController::class, 'index']),
+            self::texts(DocBlockParser::getNotes([PhpDocController::class, 'index'])),
         );
     }
 
     #[Test]
     public function it_extracts_notes_from_invokable_controllers()
     {
-        $this->assertSame(['Invokable note'], DocBlockParser::getNotes(InvokableController::class));
+        $this->assertSame(['Invokable note'], self::texts(DocBlockParser::getNotes(InvokableController::class)));
     }
 
     /**
@@ -63,7 +64,7 @@ class DocBlockParserTest extends TestCase
     #[DataProvider('docBlocks')]
     public function it_parses_docblock_edge_cases(string $method, array $expected)
     {
-        $this->assertSame($expected, DocBlockParser::getNotes(EdgeCaseController::class.'@'.$method));
+        $this->assertSame($expected, self::texts(DocBlockParser::getNotes(EdgeCaseController::class.'@'.$method)));
     }
 
     #[Test]
@@ -71,15 +72,15 @@ class DocBlockParserTest extends TestCase
     {
         $this->assertSame(
             ['Owned by the integrations team', 'Nightly export only'],
-            DocBlockParser::getNotes(ClassNotesController::class.'@export'),
+            self::texts(DocBlockParser::getNotes(ClassNotesController::class.'@export')),
         );
         $this->assertSame(
             ['Owned by the integrations team'],
-            DocBlockParser::getNotes(ClassNotesController::class.'@undocumented'),
+            self::texts(DocBlockParser::getNotes(ClassNotesController::class.'@undocumented')),
         );
         $this->assertSame(
             ['Owned by the integrations team', 'Invoked by the scheduler'],
-            DocBlockParser::getNotes(ClassNotesController::class),
+            self::texts(DocBlockParser::getNotes(ClassNotesController::class)),
         );
     }
 
@@ -88,7 +89,7 @@ class DocBlockParserTest extends TestCase
     {
         $this->assertSame(
             ['Child controller', 'Nightly export only'],
-            DocBlockParser::getNotes(ChildNotesController::class.'@export'),
+            self::texts(DocBlockParser::getNotes(ChildNotesController::class.'@export')),
         );
     }
 
@@ -109,7 +110,7 @@ class DocBlockParserTest extends TestCase
     #[Test]
     public function it_handles_windows_line_endings()
     {
-        $this->assertSame(['First', 'Second'], DocBlockParser::parse("/**\r\n * @note First\r\n * @note Second\r\n */"));
+        $this->assertSame(['First', 'Second'], self::texts(DocBlockParser::parse("/**\r\n * @note First\r\n * @note Second\r\n */")));
     }
 
     /**
@@ -131,6 +132,15 @@ class DocBlockParserTest extends TestCase
     #[DataProvider('unresolvableActions')]
     public function it_returns_no_notes_for_unresolvable_actions(mixed $action)
     {
-        $this->assertSame([], DocBlockParser::getNotes($action));
+        $this->assertSame([], self::texts(DocBlockParser::getNotes($action)));
+    }
+
+    /**
+     * @param  array<int, Note>  $notes
+     * @return array<int, string>
+     */
+    protected static function texts(array $notes): array
+    {
+        return array_map(fn (Note $note) => $note->text, $notes);
     }
 }

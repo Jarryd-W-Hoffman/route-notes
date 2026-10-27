@@ -3,6 +3,8 @@
 namespace Jarryd\RouteNotes\Support;
 
 use Closure;
+use Jarryd\RouteNotes\Note;
+use Jarryd\RouteNotes\NoteLevel;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
@@ -12,14 +14,14 @@ class DocBlockParser
     /**
      * Notes already read, keyed by class or "class::method".
      *
-     * @var array<string, array<int, string>>
+     * @var array<string, array<int, Note>>
      */
     protected static array $cache = [];
 
     /**
      * Extract notes from a given action's class and method PHPDoc, class notes first.
      *
-     * @return array<int, string>
+     * @return array<int, Note>
      */
     public static function getNotes(mixed $action): array
     {
@@ -49,7 +51,7 @@ class DocBlockParser
     }
 
     /**
-     * @return array<int, string>
+     * @return array<int, Note>
      */
     protected static function readNotes(string $class, string $method): array
     {
@@ -74,9 +76,9 @@ class DocBlockParser
      * Extract the @note tags from a PHPDoc comment.
      *
      * A note continues onto following lines until a blank line, another tag
-     * or the end of the comment.
+     * or the end of the comment. A leading "[level]" sets the note's level.
      *
-     * @return array<int, string>
+     * @return array<int, Note>
      */
     public static function parse(string $docComment): array
     {
@@ -99,6 +101,18 @@ class DocBlockParser
 
         $notes[] = $current;
 
-        return array_values(array_filter($notes, fn (?string $note) => $note !== null && $note !== ''));
+        return array_values(array_map(
+            fn (string $note) => static::toNote($note),
+            array_filter($notes, fn (?string $note) => $note !== null && $note !== ''),
+        ));
+    }
+
+    protected static function toNote(string $text): Note
+    {
+        if (preg_match('/^\[(\w+)\]\s+(.+)$/', $text, $matches) && $level = NoteLevel::tryFrom(strtolower($matches[1]))) {
+            return new Note($matches[2], $level);
+        }
+
+        return new Note($text);
     }
 }

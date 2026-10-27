@@ -6,6 +6,7 @@ use Illuminate\Foundation\Console\RouteListCommand as BaseCommand;
 use Illuminate\Routing\Route;
 use Illuminate\Support\ServiceProvider;
 use Jarryd\RouteNotes\Commands\RouteListCommand;
+use Jarryd\RouteNotes\Commands\RouteNotesCommand;
 
 class RouteNotesServiceProvider extends ServiceProvider
 {
@@ -20,6 +21,10 @@ class RouteNotesServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if ($this->app->runningInConsole()) {
+            $this->commands([RouteNotesCommand::class]);
+        }
+
         // Notes live in the route action rather than the route defaults, as
         // defaults are merged into the route parameters at dispatch time.
         Route::macro('note', function (string $value, NoteLevel|string $level = NoteLevel::Info) {

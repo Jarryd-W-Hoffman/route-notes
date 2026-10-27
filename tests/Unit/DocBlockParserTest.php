@@ -3,6 +3,8 @@
 namespace Jarryd\RouteNotes\Tests\Unit;
 
 use Jarryd\RouteNotes\Support\DocBlockParser;
+use Jarryd\RouteNotes\Tests\Stubs\ChildNotesController;
+use Jarryd\RouteNotes\Tests\Stubs\ClassNotesController;
 use Jarryd\RouteNotes\Tests\Stubs\EdgeCaseController;
 use Jarryd\RouteNotes\Tests\Stubs\InvokableController;
 use Jarryd\RouteNotes\Tests\Stubs\PhpDocController;
@@ -46,6 +48,8 @@ class DocBlockParserTest extends TestCase
             'notes among other tags' => ['mixedTags', ['After other tags']],
             'lookalike and empty tags' => ['lookalikes', ['Padded note']],
             'special characters' => ['specialCharacters', ['Contains an @ symbol and a * star']],
+            'multi line notes' => ['multiLine', ['This note is long enough that it wraps onto a second line and a third.', 'Second note']],
+            'text on the following line' => ['textOnNextLine', ['Text on the following line']],
             'empty single line docblock' => ['emptySingleLine', []],
             'no docblock' => ['undocumented', []],
             'line comment' => ['lineComment', []],
@@ -60,6 +64,46 @@ class DocBlockParserTest extends TestCase
     public function it_parses_docblock_edge_cases(string $method, array $expected)
     {
         $this->assertSame($expected, DocBlockParser::getNotes(EdgeCaseController::class.'@'.$method));
+    }
+
+    #[Test]
+    public function it_includes_class_level_notes_before_method_notes()
+    {
+        $this->assertSame(
+            ['Owned by the integrations team', 'Nightly export only'],
+            DocBlockParser::getNotes(ClassNotesController::class.'@export'),
+        );
+        $this->assertSame(
+            ['Owned by the integrations team'],
+            DocBlockParser::getNotes(ClassNotesController::class.'@undocumented'),
+        );
+        $this->assertSame(
+            ['Owned by the integrations team', 'Invoked by the scheduler'],
+            DocBlockParser::getNotes(ClassNotesController::class),
+        );
+    }
+
+    #[Test]
+    public function inherited_methods_use_the_routed_controllers_class_notes()
+    {
+        $this->assertSame(
+            ['Child controller', 'Nightly export only'],
+            DocBlockParser::getNotes(ChildNotesController::class.'@export'),
+        );
+    }
+
+    #[Test]
+    public function it_caches_notes_per_action()
+    {
+        DocBlockParser::flushCache();
+
+        $first = DocBlockParser::getNotes(PhpDocController::class.'@index');
+
+        $cache = (new \ReflectionProperty(DocBlockParser::class, 'cache'))->getValue();
+
+        $this->assertSame($first, DocBlockParser::getNotes(PhpDocController::class.'@index'));
+        $this->assertArrayHasKey(PhpDocController::class.'::index', $cache);
+        $this->assertArrayHasKey(PhpDocController::class, $cache);
     }
 
     #[Test]

@@ -31,6 +31,22 @@ class EdgeCaseController
      */
     public function specialCharacters() {}
 
+    /**
+     * @note This note is long enough that it wraps
+     *       onto a second line
+     *   and a third.
+     * @note Second note
+     *
+     * Trailing description is not part of a note.
+     */
+    public function multiLine() {}
+
+    /**
+     * @note
+     *   Text on the following line
+     */
+    public function textOnNextLine() {}
+
     /** @note */
     public function emptySingleLine() {}
 

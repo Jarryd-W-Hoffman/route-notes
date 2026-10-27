@@ -4,6 +4,7 @@ namespace Jarryd\RouteNotes\Commands;
 
 use Illuminate\Foundation\Console\RouteListCommand as BaseCommand;
 use Illuminate\Routing\Route;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Collection;
 use Jarryd\RouteNotes\Support\DocBlockParser;
 use Symfony\Component\Console\Formatter\OutputFormatter;
@@ -16,14 +17,13 @@ class RouteListCommand extends BaseCommand
      */
     protected $headers = ['Domain', 'Method', 'URI', 'Name', 'Action', 'Middleware', 'Path', 'Note'];
 
-    /**
-     * @return array<int, array<int, mixed>>
-     */
-    protected function getOptions(): array
+    public function __construct(Router $router)
     {
-        return array_merge(parent::getOptions(), [
-            ['notes', null, InputOption::VALUE_NONE, 'Only show routes that have notes'],
-        ]);
+        parent::__construct($router);
+
+        // Added here rather than via getOptions(), which newer framework versions
+        // ignore in favour of the parent command's $signature.
+        $this->addOption('notes', null, InputOption::VALUE_NONE, 'Only show routes that have notes');
     }
 
     /**

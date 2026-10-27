@@ -6,9 +6,9 @@ Add human‑readable notes to your Laravel routes and surface them directly in `
 
 ## 🤔 Why This Exists
 
-This package was born out of necessity while collaborating on a 10-year-old codebase that migrated through several version of Laravel.
+This package was born out of necessity while collaborating on a 10-year-old codebase that migrated through several versions of Laravel.
 
-When you're staring at 5,000+ routes, many of which are dead, deprecated, or "temporarily" added for a legacy sync, documentation is often non-existant, buried in Slack threads or ancient Jira tickets.
+When you're staring at 5,000+ routes, many of which are dead, deprecated, or "temporarily" added for a legacy sync, documentation is often non-existent, buried in Slack threads or ancient Jira tickets.
 
 Laravel documents what a route **`does`**; this package documents **`why`**. It gives your team a way to leave "sticky notes" directly on the route list so you can identify sensitive endpoints, legacy baggage, or internal-only tools at a glance.
 
@@ -17,7 +17,8 @@ Laravel documents what a route **`does`**; this package documents **`why`**. It 
 * ✅ **Fluent API** — Attach notes directly to route definitions.
 * ✅ **Controller DocBlocks** — Extract `@note` tags from controller methods automatically.
 * ✅ **Filtering** — Show only documented routes with the `--notes` flag.
-* ✅ **Legacy Friendly** — Supports Laravel 12 and 13.
+* ✅ **Native Output** — Keeps Laravel's `route:list` layout, `-v` middleware and `--json` output intact.
+* ✅ **Runtime Safe** — Notes are metadata only; they never reach your controllers or route parameters.
 * ✅ **Zero Config** — Install and run. No service providers to register or config to publish.
 * ✅ **Cache Safe** — Fully compatible with `route:cache`.
 
@@ -49,9 +50,9 @@ Route::post('/webhooks/stripe', StripeController::class)
     ]);
 ```
 
-**2.PHPDoc Support**
+**2. PHPDoc Support**
 
-Keep your documentation close to the code. Define notes directly in your controller’s PHPDoc.
+Keep your documentation close to the code. Define notes directly in your controller’s PHPDoc. Each `@note` must start its own line.
 
 ```php
 class UserController extends Controller
@@ -73,18 +74,18 @@ class ReportController
 }
 ```
 
-**3.Combining Both**
+**3. Combining Both**
 
-Fluent notes and PHPDoc notes are merged automatically. Fluent notes always appear first.
+Fluent notes and PHPDoc notes are merged automatically. Fluent notes always appear first, and duplicates are removed.
 
 ```php
 Route::get('/users', [UserController::class, 'index'])
     ->note('High Priority');
 
-// Result: "High Priority | Used by Admin Portal only | ..."
+// Notes: High Priority, Used by Admin Portal only, Rate limited to 5 req/min
 ```
 
-**4.The Result**
+**4. The Result**
 
 Run the standard Laravel command:
 
@@ -92,17 +93,40 @@ Run the standard Laravel command:
 php artisan route:list
 ```
 
-| Method | URI               | Name            | Action                  | Note                      |
-|--------|-------------------|-----------------|-------------------------|---------------------------|
-| GET    | api/legacy-sync   | sync.handle     | SyncController@handle   | Legacy sync for old ERP   |
-| POST   | webhooks/stripe   |                 | StripeController        | Production only           |
-| GET    | admin/reports     | admin.reports   | ReportController        | Admin Portal only         |
+Notes appear beneath each route, alongside Laravel's usual output:
+
+```
+  GET|HEAD   api/legacy-sync ............................ sync.handle › SyncController@handle
+             ✎ Legacy sync for old ERP
+             ✎ Scheduled for removal in Q4
+  GET|HEAD   users ......................................................... UserController@index
+             ✎ High Priority
+             ✎ Used by Admin Portal only
+             ✎ Rate limited to 5 req/min
+  POST       webhooks/stripe ................................................... StripeController
+             ✎ Production only
+             ✎ Requires secret validation
+
+                                                                          Showing [3] routes
+```
+
+With `--json`, each route gains a `note` array:
+
+```json
+{"method": "POST", "uri": "webhooks/stripe", "action": "App\\Http\\Controllers\\StripeController", "note": ["Production only", "Requires secret validation"], "...": "..."}
+```
 
 ## 🔎 Filtering
 When auditing a massive route file, you can hide the noise and only show routes that have context attached:
 
 ```bash
 php artisan route:list --notes
+```
+
+It combines with the built-in filters:
+
+```bash
+php artisan route:list --notes --path=api --json
 ```
 
 ## 🎯 Compatibility & Support
@@ -112,8 +136,9 @@ php artisan route:list --notes
 | Controller Actions    | ✅     | Supports Controller@method                    |
 | Invokable Controllers | ✅     | Supports __invoke                             |
 | Route Caching         | ✅     | Fully compatible with route:cache             |
-| Laravel Versions      | ✅     | Supports 12.x and 13.x                          |
-| Closures              | ⚠️     | Fluent ->note() works; PHPDoc does not.        |
+| Laravel Versions      | ✅     | Supports 12.x and 13.x                        |
+| `--json` Output       | ✅     | Notes included as a `note` array              |
+| Closures              | ⚠️     | Fluent ->note() works; PHPDoc does not.       |
 | Class-level tags      | ❌     | Method-level @note only.                      |
 
 ## 📄 License

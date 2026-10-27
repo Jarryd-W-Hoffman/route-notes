@@ -36,7 +36,7 @@ class DocBlockParserTest extends TestCase
             ->note('Fluent Note');
 
         $this->artisan('route:list')
-            ->expectsOutputToContain('Fluent Note | Admin only | Read-only access');
+            ->expectsOutputToContain('✎ Fluent Note');
     }
 
     #[Test]

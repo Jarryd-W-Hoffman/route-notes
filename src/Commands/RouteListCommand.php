@@ -33,7 +33,7 @@ class RouteListCommand extends BaseCommand
             return null;
         }
 
-        $fluentNotes = $route->defaults['_route_notes'] ?? [];
+        $fluentNotes = $route->getAction('notes') ?? [];
         $docNotes = DocBlockParser::getNotes($route->getAction('uses'));
         $allNotes = array_unique(array_merge($fluentNotes, $docNotes));
 

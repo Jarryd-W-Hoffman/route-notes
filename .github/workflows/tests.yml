@@ -8,6 +8,33 @@ on:
   workflow_dispatch:
 
 jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+
+    name: Lint & Static Analysis
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          coverage: none
+
+      - name: Install dependencies
+        run: composer update --prefer-stable --prefer-dist --no-interaction
+
+      - name: Lint
+        run: composer lint
+
+      - name: Static analysis
+        run: composer analyse
+
+      - name: Static analysis (tests)
+        run: composer analyse:tests
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -39,14 +66,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer require "illuminate/support:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
           composer update --prefer-stable --prefer-dist --no-interaction
-
-      - name: Lint
-        run: vendor/bin/pint --test
-
-      - name: Static analysis
-        run: vendor/bin/phpstan analyse --memory-limit=1G
 
       - name: Execute tests
         run: vendor/bin/phpunit

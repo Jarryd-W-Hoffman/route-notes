@@ -30,7 +30,7 @@ class RuntimeIsolationTest extends TestCase
         $route = Route::get('/defaults', fn () => 'ok')->note('Note');
 
         $this->assertSame([], $route->defaults);
-        $this->assertSame(['Note'], $route->getAction('notes'));
+        $this->assertSame([['text' => 'Note', 'level' => 'info']], $route->getAction('notes'));
     }
 
     #[Test]

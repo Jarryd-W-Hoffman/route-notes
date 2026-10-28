@@ -15,8 +15,10 @@ Laravel documents what a route **`does`**; this package documents **`why`**. It 
 ## ✨ Features
 
 * ✅ **Fluent API** — Attach notes directly to route definitions.
-* ✅ **Controller DocBlocks** — Extract `@note` tags from controller methods automatically.
-* ✅ **Filtering** — Show only documented routes with the `--notes` flag.
+* ✅ **Controller DocBlocks & Attributes** — Read `@note` tags and `#[Note]` attributes from controller classes and methods.
+* ✅ **Levels** — Flag notes as `warning`, `deprecated` or `danger`, color-coded in the terminal.
+* ✅ **Filtering** — Show only documented routes with `--notes`, or search them with `--note=legacy`.
+* ✅ **Markdown Export** — Generate a notes report for wikis and PRs with `php artisan route:notes`.
 * ✅ **Native Output** — Keeps Laravel's `route:list` layout, `-v` middleware and `--json` output intact.
 * ✅ **Runtime Safe** — Notes are metadata only; they never reach your controllers or route parameters.
 * ✅ **Zero Config** — Install and run. No service providers to register or config to publish.
@@ -40,7 +42,7 @@ Attach notes to any route. Chaining `note()` multiple times or using `notes()` w
 Route::get('/api/legacy-sync', [SyncController::class, 'handle'])
     ->name('sync.handle')
     ->note('Legacy sync for old ERP')
-    ->note('Scheduled for removal in Q4');
+    ->note('Scheduled for removal in Q4', 'deprecated');
 
 // Or via array
 Route::post('/webhooks/stripe', StripeController::class)
@@ -50,9 +52,26 @@ Route::post('/webhooks/stripe', StripeController::class)
     ]);
 ```
 
-**2. PHPDoc Support**
+**2. Levels**
 
-Keep your documentation close to the code. Define notes directly in your controller’s PHPDoc. Each `@note` must start its own line.
+Every note has a level: `info` (the default), `warning`, `deprecated` or `danger`. Pass a level name or the `NoteLevel` enum:
+
+```php
+use Jarryd\RouteNotes\NoteLevel;
+
+Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])
+    ->note('Hard deletes customer data', NoteLevel::Danger)
+    ->note('Use /v2/customers instead', 'deprecated');
+
+Route::post('/sync', SyncController::class)
+    ->notes(['Slow', 'Not idempotent'], 'warning');
+```
+
+An unknown level name throws an `InvalidArgumentException`, so typos don't go unnoticed.
+
+**3. PHPDoc Support**
+
+Keep your documentation close to the code. Define notes directly in your controller’s PHPDoc. Each `@note` must start its own line, and continues onto following lines until a blank line or another tag. Prefix the text with `[level]` to set a level.
 
 ```php
 class UserController extends Controller
@@ -63,7 +82,11 @@ class UserController extends Controller
      */
     public function index() { ... }
 
-    // ...
+    /**
+     * @note [deprecated] Replaced by the bulk export endpoint, which
+     *       streams results instead of building them in memory.
+     */
+    public function export() { ... }
 }
 
 // Invokable controllers are also supported
@@ -74,9 +97,35 @@ class ReportController
 }
 ```
 
-**3. Combining Both**
+Notes in a controller's class docblock apply to every route using that controller:
 
-Fluent notes and PHPDoc notes are merged automatically. Fluent notes always appear first, and duplicates are removed.
+```php
+/**
+ * @note Owned by the integrations team
+ */
+class ErpController extends Controller { ... }
+```
+
+**4. Attributes**
+
+Prefer attributes? `#[Note]` works on controller classes and methods, and can be repeated:
+
+```php
+use Jarryd\RouteNotes\Note;
+use Jarryd\RouteNotes\NoteLevel;
+
+#[Note('Owned by the integrations team')]
+class LedgerController extends Controller
+{
+    #[Note('Writes to ledger')]
+    #[Note('Remove after the Q4 migration', level: NoteLevel::Deprecated)]
+    public function store() { ... }
+}
+```
+
+**5. Combining Them**
+
+All sources are merged automatically, in this order: fluent notes, then class notes, then method notes (PHPDoc before attributes). Duplicates are removed.
 
 ```php
 Route::get('/users', [UserController::class, 'index'])
@@ -85,7 +134,7 @@ Route::get('/users', [UserController::class, 'index'])
 // Notes: High Priority, Used by Admin Portal only, Rate limited to 5 req/min
 ```
 
-**4. The Result**
+**6. The Result**
 
 Run the standard Laravel command:
 
@@ -93,12 +142,12 @@ Run the standard Laravel command:
 php artisan route:list
 ```
 
-Notes appear beneath each route, alongside Laravel's usual output:
+Notes appear beneath each route, alongside Laravel's usual output, colored by level:
 
 ```
   GET|HEAD   api/legacy-sync ............................ sync.handle › SyncController@handle
              ✎ Legacy sync for old ERP
-             ✎ Scheduled for removal in Q4
+             ✎ [deprecated] Scheduled for removal in Q4
   GET|HEAD   users ......................................................... UserController@index
              ✎ High Priority
              ✎ Used by Admin Portal only
@@ -113,7 +162,14 @@ Notes appear beneath each route, alongside Laravel's usual output:
 With `--json`, each route gains a `note` array:
 
 ```json
-{"method": "POST", "uri": "webhooks/stripe", "action": "App\\Http\\Controllers\\StripeController", "note": ["Production only", "Requires secret validation"], "...": "..."}
+{
+    "method": "GET|HEAD",
+    "uri": "api/legacy-sync",
+    "note": [
+        {"text": "Legacy sync for old ERP", "level": "info"},
+        {"text": "Scheduled for removal in Q4", "level": "deprecated"}
+    ]
+}
 ```
 
 ## 🔎 Filtering
@@ -123,11 +179,35 @@ When auditing a massive route file, you can hide the noise and only show routes 
 php artisan route:list --notes
 ```
 
-It combines with the built-in filters:
+To search notes, pass `--note`. It matches note text (case-insensitive) or a level name:
+
+```bash
+php artisan route:list --note=legacy
+php artisan route:list --note=deprecated
+```
+
+Both combine with the built-in filters:
 
 ```bash
 php artisan route:list --notes --path=api --json
 ```
+
+## 📝 Markdown Reports
+
+`route:notes` exports every route with notes as a Markdown table, ready for a wiki page or PR description:
+
+```bash
+php artisan route:notes
+php artisan route:notes --note=deprecated --output=docs/deprecated-routes.md
+```
+
+```markdown
+| Method | URI | Name | Action | Notes |
+| --- | --- | --- | --- | --- |
+| GET\|HEAD | `api/legacy-sync` | `sync.handle` | `App\Http\Controllers\SyncController@handle` | Legacy sync for old ERP<br>**Deprecated:** Scheduled for removal in Q4 |
+```
+
+It accepts the same filters as `route:list`, as well as `--json`.
 
 ## 🎯 Compatibility & Support
 
@@ -138,8 +218,9 @@ php artisan route:list --notes --path=api --json
 | Route Caching         | ✅     | Fully compatible with route:cache             |
 | Laravel Versions      | ✅     | Supports 12.x and 13.x                        |
 | `--json` Output       | ✅     | Notes included as a `note` array              |
+| PHP Attributes        | ✅     | `#[Note]` on classes and methods              |
+| Class-level tags      | ✅     | Apply to every action on the controller       |
 | Closures              | ⚠️     | Fluent ->note() works; PHPDoc does not.       |
-| Class-level tags      | ❌     | Method-level @note only.                      |
 
 ## 📄 License
 The MIT License (MIT). Please see [License File](./LICENSE) for more information.

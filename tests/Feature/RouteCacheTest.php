@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 use Jarryd\RouteNotes\Tests\Stubs\ParameterController;
 use Jarryd\RouteNotes\Tests\Stubs\PhpDocController;
 
-Route::get('/cached/{id}', [ParameterController::class, 'show'])->note('Fluent')->notes(['Array']);
+Route::get('/cached/{id}', [ParameterController::class, 'show'])->note('Fluent')->notes(['Array'], 'deprecated');
 Route::get('/cached-doc', [PhpDocController::class, 'index']);
 PHP);
 
@@ -29,8 +29,14 @@ PHP);
         $notes = collect(json_decode(Artisan::output(), true))->pluck('note', 'uri')->all();
 
         $this->assertSame([
-            'cached-doc' => ['Admin only', 'Read-only access'],
-            'cached/{id}' => ['Fluent', 'Array'],
+            'cached-doc' => [
+                ['text' => 'Admin only', 'level' => 'info'],
+                ['text' => 'Read-only access', 'level' => 'info'],
+            ],
+            'cached/{id}' => [
+                ['text' => 'Fluent', 'level' => 'info'],
+                ['text' => 'Array', 'level' => 'deprecated'],
+            ],
         ], $notes);
     }
 

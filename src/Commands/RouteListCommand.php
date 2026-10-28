@@ -6,7 +6,10 @@ use Illuminate\Foundation\Console\RouteListCommand as BaseCommand;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Collection;
-use Jarryd\RouteNotes\Support\DocBlockParser;
+use Illuminate\Support\Str;
+use Jarryd\RouteNotes\Note;
+use Jarryd\RouteNotes\NoteLevel;
+use Jarryd\RouteNotes\Support\NoteReader;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Input\InputOption;
 
@@ -24,6 +27,7 @@ class RouteListCommand extends BaseCommand
         // Added here rather than via getOptions(), which newer framework versions
         // ignore in favour of the parent command's $signature.
         $this->addOption('notes', null, InputOption::VALUE_NONE, 'Only show routes that have notes');
+        $this->addOption('note', null, InputOption::VALUE_REQUIRED, 'Only show routes with a note containing the given text, or of the given level');
     }
 
     /**
@@ -40,43 +44,61 @@ class RouteListCommand extends BaseCommand
 
         $notes = $this->getNotes($route);
 
-        if ($this->option('notes') && $notes === []) {
+        if ($this->onlyRoutesWithNotes() && $notes === []) {
             return null;
         }
 
-        // Notes are newline separated, matching how the parent stores middleware.
-        $information['note'] = implode("\n", $notes);
+        if (is_string($search = $this->option('note')) && ! $this->hasMatchingNote($notes, $search)) {
+            return null;
+        }
+
+        // Stored as plain arrays so sorting and JSON output work like the other columns.
+        $information['note'] = array_map(fn (Note $note) => $note->toArray(), $notes);
 
         return $information;
+    }
+
+    protected function onlyRoutesWithNotes(): bool
+    {
+        return (bool) $this->option('notes');
+    }
+
+    /**
+     * @param  array<int, Note>  $notes
+     */
+    protected function hasMatchingNote(array $notes, string $search): bool
+    {
+        foreach ($notes as $note) {
+            if ($note->level->value === strtolower($search) || Str::contains($note->text, $search, ignoreCase: true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * Get the fluent and PHPDoc notes for the given route, fluent notes first.
      *
-     * @return array<int, string>
+     * @return array<int, Note>
      */
     protected function getNotes(Route $route): array
     {
-        /** @var array<int, string> $fluentNotes */
+        /** @var array<int, string|array{text: string, level?: string}> $fluentNotes */
         $fluentNotes = $route->getAction('notes') ?? [];
 
-        $uses = $route->getAction('uses');
-        $docNotes = $uses === null ? [] : DocBlockParser::getNotes($uses);
+        $notes = array_merge(
+            array_map(Note::fromArray(...), $fluentNotes),
+            NoteReader::getNotes($route->getAction('uses')),
+        );
 
-        return array_values(array_unique(array_merge($fluentNotes, $docNotes)));
-    }
+        $unique = [];
 
-    /**
-     * @param  Collection<array-key, array<string, mixed>>  $routes
-     * @return string
-     */
-    protected function asJson($routes)
-    {
-        return parent::asJson($routes->map(function (array $route) {
-            $route['note'] = empty($route['note']) ? [] : explode("\n", (string) $route['note']);
+        foreach ($notes as $note) {
+            $unique[$note->level->value.':'.$note->text] ??= $note;
+        }
 
-            return $route;
-        }));
+        return array_values($unique);
     }
 
     /**
@@ -93,7 +115,7 @@ class RouteListCommand extends BaseCommand
             ->map(fn (array $route) => $route['method'] === 'GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS' ? 'ANY' : $route['method'])
             ->max());
 
-        $notes = $routes->values()->map(fn (array $route) => (string) ($route['note'] ?? ''));
+        $notes = $routes->values()->map(fn (array $route) => $route['note'] ?? []);
 
         $output = [];
         $index = -1;
@@ -103,7 +125,7 @@ class RouteListCommand extends BaseCommand
 
             // A route's block ends at the next route, or at the blank line before the route count.
             if ($index >= 0 && ($isRoute || $line === '')) {
-                $this->appendNotes($output, $notes->get($index, ''), $maxMethod);
+                $this->appendNotes($output, $notes->get($index, []), $maxMethod);
             }
 
             $index = $isRoute ? $index + 1 : ($line === '' ? -1 : $index);
@@ -116,11 +138,18 @@ class RouteListCommand extends BaseCommand
 
     /**
      * @param  array<int, string>  $output
+     * @param  array<int, array{text: string, level: string}>  $notes
      */
-    protected function appendNotes(array &$output, string $notes, int $maxMethod): void
+    protected function appendNotes(array &$output, array $notes, int $maxMethod): void
     {
-        foreach (array_filter(explode("\n", $notes)) as $note) {
-            $output[] = sprintf('<fg=yellow>         %s✎ %s</>', str_repeat(' ', $maxMethod), OutputFormatter::escape($note));
+        foreach (array_map(Note::fromArray(...), $notes) as $note) {
+            $output[] = sprintf(
+                '<fg=%s>         %s✎ %s%s</>',
+                $note->level->color(),
+                str_repeat(' ', $maxMethod),
+                $note->level === NoteLevel::Info ? '' : "[{$note->level->value}] ",
+                OutputFormatter::escape($note->text),
+            );
         }
     }
 }

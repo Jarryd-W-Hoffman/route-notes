@@ -21,7 +21,8 @@
         "format": "./vendor/bin/pint",
         "analyse": "./vendor/bin/phpstan analyse --memory-limit=1G",
         "analyse:tests": "phpstan analyse -c phpstan.tests.neon --memory-limit=1G",
-        "test": "./vendor/bin/phpunit"
+        "test": "./vendor/bin/phpunit",
+        "screenshots": "./vendor/bin/phpunit --testsuite=Screenshots"
     },
     "require": {
         "php": "^8.2",

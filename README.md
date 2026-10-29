@@ -214,13 +214,10 @@ composer test         # PHPUnit
 | `composer format` | Fix code style with Pint |
 | `composer analyse` | PHPStan (level 8) on `src` |
 | `composer analyse:tests` | PHPStan on the tests |
-| `composer screenshots` | Regenerate the screenshots in this README |
 
 CI runs the tests on PHP 8.2 to 8.5 against Laravel 12 and 13, and lint and static analysis once in their own job.
 
-### Screenshots
-
-The screenshots above are taken of a small demo app (`tests/Screenshots/DemoApp.php`): the real `route:list` and `route:notes` output, captured in color and rendered in a terminal window with headless Chrome. After changing what a screenshot shows, run `composer screenshots` and commit the images it writes to `.github/screenshots`. It needs Chrome (set `CHROME_PATH` if it isn't found), the GD extension, and a network connection for the font.
+The screenshots in this README show the real `route:list` and `route:notes` output for a small demo app.
 
 ### Contributing
 

@@ -146,17 +146,17 @@ Route Notes came out of working on a 10-year-old codebase that had moved through
 
 A route's notes are gathered from every source, in this order, with duplicates removed:
 
-```text
-Route::get(...)->note('…')             1. fluent notes, in the order they were added
-        │
-        ▼
-class LedgerController                 2. class notes: PHPDoc @note, then #[Note]
-        │
-        ▼
-public function store()                3. method notes: PHPDoc @note, then #[Note]
+```mermaid
+flowchart LR
+    F["<b>1. On the route</b><br/>->note()<br/>->notes()"] --> C
+    C["<b>2. Controller class</b><br/>@note tags,<br/>then #35;[Note]"] --> M
+    M["<b>3. Action method</b><br/>@note tags,<br/>then #35;[Note]"] --> N
+    N(["Notes in order,<br/>duplicates removed"]) --> L["route:list"]
+    N --> R["route:notes"]
+    N --> J["--json"]
 ```
 
-Class notes come from the controller the route points at, even when the method is inherited from a parent class. Closure routes can only have fluent notes.
+Fluent notes keep the order they were added in. Class notes come from the controller the route points at, even when the method is inherited from a parent class. Closure routes can only have fluent notes.
 
 ## Command reference
 
@@ -188,6 +188,18 @@ That's it: the package registers itself. There's no config to publish and no ser
 | **Laravel** | 12.x or 13.x |
 
 ## How it works
+
+```mermaid
+flowchart LR
+    D["Route::get(…)<br/>->note('…')"] -->|stored in| A[("Route action<br/>kept by route:cache")]
+    P["@note and #35;[Note]<br/>in controllers"] -->|"read by NoteReader,<br/>cached per controller"| L
+    A --> L
+    subgraph Commands["route:list · route:notes"]
+        L["Laravel's route list<br/>+ each route's notes"] --> F{"--notes<br/>--note=…"}
+        F --> O["✎ Notes under<br/>each route"]
+    end
+    A -. "never passed<br/>as parameters" .-x Q["Serving<br/>a request"]
+```
 
 | Piece | What it does |
 | --- | --- |
